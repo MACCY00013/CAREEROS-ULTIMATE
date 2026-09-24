@@ -16,3 +16,10 @@ def test_skill_sync_is_persistent_for_process():
         assert response.status_code == 200
         skills = client.get("/api/v1/skills").json()["items"]
     assert {skill["name"] for skill in skills}.__contains__("Test skill")
+
+
+def test_security_headers_are_present():
+    with TestClient(app) as client:
+        response = client.get("/api/v1/health")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-request-id"]

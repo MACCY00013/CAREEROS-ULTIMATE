@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from uuid import uuid4
 from pathlib import Path
 from typing import Literal
 
@@ -12,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .db import Application, CareerProfileRow, Skill, initialize, session
+from .queue import enqueue
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -94,6 +98,8 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="CareerOS API", version="0.1.0", lifespan=lifespan)
+request_windows: dict[str, deque[float]] = defaultdict(deque)
+rate_limit = int(os.getenv("RATE_LIMIT_PER_MINUTE", "120"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("WEB_ORIGIN", "http://localhost:8000")],
@@ -105,11 +111,24 @@ app.add_middleware(
 
 @app.middleware("http")
 async def security_headers(request, call_next):
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    window = request_windows[client_ip]
+    while window and now - window[0] >= 60:
+        window.popleft()
+    if len(window) >= rate_limit:
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"}, headers={"Retry-After": "60"})
+    window.append(now)
     response = await call_next(request)
+    response.headers["X-Request-ID"] = str(uuid4())
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = "default-src 'self'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:"
+    if os.getenv("APP_ENV") == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
 
@@ -209,7 +228,8 @@ def process_prompt(request: PromptRequest):
     }
     if not configured[request.provider]:
         raise HTTPException(status_code=503, detail=f"{request.provider} is not configured on the server")
-    return {"status": "queued", "provider": request.provider, "message": "Prompt accepted for secure background processing."}
+    queue_backend = enqueue("careeros:ai", {"provider": request.provider, "prompt": request.prompt})
+    return {"status": "queued", "provider": request.provider, "queue": queue_backend, "message": "Prompt accepted for secure background processing."}
 
 
 if WEB.exists():
