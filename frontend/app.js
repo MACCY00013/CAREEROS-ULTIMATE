@@ -1,4 +1,4 @@
-const state = { skills: [], careers: [], jobs: [], roadmap: [], applications: [], dashboard: {} };
+const state = { skills: [], careers: [], jobs: [], roadmap: [], applications: [], dashboard: {}, offline: false };
 const app = document.querySelector('#app');
 const CACHE_KEY = 'careeros-cache-v1';
 const OUTBOX_KEY = 'careeros-outbox-v1';
@@ -30,7 +30,8 @@ async function api(path, options = {}) {
 
 function render(view = 'home') {
   document.querySelectorAll('.tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.view === view));
-  if (view === 'home') app.innerHTML = `<section class="hero"><div><p class="eyebrow">YOUR OPERATING SYSTEM FOR MOMENTUM</p><h2>A calmer route from learning to landing the role.</h2><p>Track capability, discover aligned paths, and keep moving even when the connection drops.</p></div><div class="metric"><strong>${state.skills.length || '—'}</strong><span>skills in your vault</span></div></section><section class="grid"><article><span class="label">Next move</span><h3>Choose a target role</h3><p>Career paths turn your skills into a practical sequence of next steps.</p><button class="primary" data-go="careers">Explore paths →</button></article><article><span class="label">Offline ready</span><h3>Your work stays yours</h3><p>Core pages are cached locally. Queued changes sync when you reconnect.</p><span class="pill">${outbox().length} changes waiting</span></article></section>`;
+  const connectionBanner = state.offline ? '<div class="offline-banner" role="status">Offline mode · cached data and queued changes are active.</div>' : '';
+  if (view === 'home') app.innerHTML = `${connectionBanner}<section class="hero"><div><p class="eyebrow">YOUR OPERATING SYSTEM FOR MOMENTUM</p><h2>A calmer route from learning to landing the role.</h2><p>Track capability, discover aligned paths, and keep moving even when the connection drops.</p></div><div class="metric"><strong>${state.skills.length || '—'}</strong><span>skills in your vault</span></div></section><section class="grid"><article><span class="label">Next move</span><h3>Choose a target role</h3><p>Career paths turn your skills into a practical sequence of next steps.</p><button class="primary" data-go="careers">Explore paths →</button></article><article><span class="label">Offline ready</span><h3>Your work stays yours</h3><p>Core pages are cached locally. Queued changes sync when you reconnect.</p><span class="pill">${outbox().length} changes waiting</span></article></section>`;
   if (view === 'skills') app.innerHTML = `<div class="section-head"><div><p class="eyebrow">SKILL VAULT</p><h2>Capabilities worth carrying forward.</h2></div><form id="skill-form"><input name="name" placeholder="Add a skill" required maxlength="120"><button class="primary">Add</button></form></div><div class="skill-list">${state.skills.map((skill) => `<button class="skill"><span>${escapeHtml(skill.name)}</span><small>${escapeHtml(skill.level)}</small></button>`).join('')}</div>`;
   if (view === 'careers') app.innerHTML = `<div class="section-head"><div><p class="eyebrow">CAREER PATHS</p><h2>Roles shaped around your strengths.</h2></div></div><div class="career-list">${state.careers.map((career) => `<article><span class="label">TARGET ROLE</span><h3>${escapeHtml(career.title)}</h3><div class="chips">${career.skills.map((skill) => `<span>${escapeHtml(skill)}</span>`).join('')}</div></article>`).join('')}</div>`;
   if (view === 'roadmap') app.innerHTML = `<div class="section-head"><div><p class="eyebrow">AI ROADMAP</p><h2>Small milestones, visible progress.</h2></div></div><div class="career-list">${state.roadmap.map((node) => `<article><label><input type="checkbox" data-roadmap="${escapeHtml(node.id)}" ${node.done ? 'checked' : ''}> ${escapeHtml(node.title)}</label><div class="chips">${node.children.map((child) => `<span>${escapeHtml(child)}</span>`).join('')}</div></article>`).join('')}</div>`;
@@ -41,7 +42,7 @@ function render(view = 'home') {
 }
 
 async function load() {
-  try { [state.skills, state.careers, state.jobs, state.roadmap, state.applications, state.dashboard] = await Promise.all([(api('/skills')).then((x) => x.items), (api('/careers')).then((x) => x.items), (api('/jobs/feed')).then((x) => x.items), (api('/ai/roadmap')).then((x) => x.items), (api('/applications')).then((x) => x.items), api('/dashboard')]); persist(); await flushOutbox(); } catch { cached(); }
+  try { [state.skills, state.careers, state.jobs, state.roadmap, state.applications, state.dashboard] = await Promise.all([(api('/skills')).then((x) => x.items), (api('/careers')).then((x) => x.items), (api('/jobs/feed')).then((x) => x.items), (api('/ai/roadmap')).then((x) => x.items), (api('/applications')).then((x) => x.items), api('/dashboard')]); state.offline = false; persist(); await flushOutbox(); } catch { cached(); state.offline = true; }
   render();
 }
 
