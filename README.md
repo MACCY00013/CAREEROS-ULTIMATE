@@ -14,6 +14,8 @@ Open `http://localhost:8000`. Docker users can run `docker compose up --build` a
 
 The Android client is under `android/`. With Android Studio and an SDK installed, build it with `gradle -p android assembleDebug`. Set `API_BASE_URL` in `android/app/build.gradle.kts` to the deployed API before signing a release APK. The app stores skills in Room and schedules WorkManager sync when network connectivity is available.
 
+The current unsigned debug APK was built successfully at `artifacts/careeros-debug.apk` in the local workspace. It is not committed because release APKs should be signed through a protected build pipeline.
+
 ## Configuration
 
 The Supabase project URL is represented in `.env.example`; the database password and all AI provider keys must be supplied locally or through the deployment secret manager. Never commit `.env`, database passwords, service-role keys, or provider keys. The publishable Supabase key is not a substitute for server-side authorization.
