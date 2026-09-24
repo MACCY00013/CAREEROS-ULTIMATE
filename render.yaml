@@ -1,4 +1,15 @@
+databases:
+  - name: careeros-db
+    databaseName: careeros
+    user: careeros
+    plan: free
+
 services:
+  - type: redis
+    name: careeros-redis
+    plan: free
+    ipAllowList: []
+
   - type: web
     name: careeros-api
     runtime: docker
@@ -11,16 +22,50 @@ services:
       - key: WEB_ORIGIN
         sync: false
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: careeros-db
+          property: connectionString
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: redis
+          name: careeros-redis
+          property: connectionString
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "120"
       - key: OPENAI_API_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: SUPERHUMAN_GO_API_KEY
+        sync: false
+      - key: SUPERHUMAN_GO_API_URL
+        sync: false
+
+  - type: worker
+    name: careeros-ai-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m backend.app.ai_worker
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careeros-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: careeros-redis
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPERHUMAN_GO_API_KEY
+        sync: false
+      - key: SUPERHUMAN_GO_API_URL
         sync: false

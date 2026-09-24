@@ -34,6 +34,6 @@ The current API exposes `/api/v1/health`, `/api/v1/dashboard`, `/api/v1/skills`,
 - Add reviewed privacy/terms text, consent management, account deletion, audit logs, backups, Sentry, and a domain managed through your DNS provider.
 - Provide real 192x192 and 512x512 PNG/WebP icons plus iOS splash assets before store or PWA release.
 - Add provider adapters only after credentials, API permissions, attribution, and usage terms are confirmed.
-- Deploy with `render.yaml` or place `Caddyfile` behind a host with a DNS record for `DOMAIN`; a custom domain cannot be registered without access to the domain registrar and deployment account.
+- Deploy with `render.yaml` from the Render dashboard. It provisions the API, PostgreSQL, Redis, and AI worker; enter provider keys as protected environment variables, then copy the generated API URL into the Android `API_BASE_URL` repository variable. Place `Caddyfile` behind a host with a DNS record for `DOMAIN` if you use a custom reverse proxy; a custom domain cannot be registered without access to the domain registrar and deployment account.
 
 The repository does not contain an APK or a custom domain yet. Those require a signed Android build pipeline and access to a domain/DNS and deployment account; they cannot be safely created from source alone.
