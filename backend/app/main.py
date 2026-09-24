@@ -51,6 +51,10 @@ JOBS = [
     {"id": "demo-3", "title": "IAM Engineer", "company": "Okta", "location": "Remote", "source": "Company careers"},
 ]
 
+DASHBOARD = {"skills_count": len(SKILLS), "saved_jobs": 0, "applications": 0, "roadmap_progress": 0}
+ROADMAP = [{"id": "foundation", "title": "Career foundation", "done": False, "children": ["Choose a target role", "Audit your strongest skills"]}]
+TRACKER = []
+
 
 class SkillUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=120)
@@ -66,6 +70,18 @@ class CareerProfile(BaseModel):
 class PromptRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=4000)
     provider: Literal["chatgpt", "gemini", "superhuman-go"] = "chatgpt"
+
+
+class TrackerItem(BaseModel):
+    id: str = Field(min_length=1, max_length=80)
+    company: str = Field(min_length=1, max_length=120)
+    role: str = Field(min_length=1, max_length=160)
+    status: Literal["wishlist", "applied", "interviewing", "offer", "rejected"] = "wishlist"
+
+
+class ATSRequest(BaseModel):
+    resume_text: str = Field(min_length=20, max_length=20000)
+    job_description: str = Field(min_length=20, max_length=20000)
 
 
 app = FastAPI(title="CareerOS API", version="0.1.0")
@@ -93,6 +109,11 @@ def health():
     return {"status": "ok", "service": "careeros-api", "version": app.version}
 
 
+@app.get("/api/v1/dashboard")
+def dashboard():
+    return {**DASHBOARD, "skills_count": len(SKILLS), "jobs_count": len(JOBS)}
+
+
 @app.get("/api/v1/skills")
 def list_skills():
     return {"items": [{"name": name, "level": "learning"} for name in SKILLS]}
@@ -103,6 +124,35 @@ def sync_skill(skill: SkillUpdate):
     if skill.name not in SKILLS:
         SKILLS.append(skill.name)
     return {"saved": True, "item": skill.model_dump(), "sync_status": "SYNCED"}
+
+
+@app.get("/api/v1/ai/roadmap")
+def roadmap():
+    return {"items": ROADMAP}
+
+
+@app.get("/api/v1/applications")
+def applications():
+    return {"items": TRACKER}
+
+
+@app.post("/api/v1/applications/sync")
+def sync_application(item: TrackerItem):
+    existing = next((application for application in TRACKER if application["id"] == item.id), None)
+    if existing:
+        existing.update(item.model_dump())
+    else:
+        TRACKER.append(item.model_dump())
+    return {"saved": True, "item": item.model_dump(), "sync_status": "SYNCED"}
+
+
+@app.post("/api/v1/ai/ats-check")
+def ats_check(request: ATSRequest):
+    resume_words = {word.lower().strip(".,:;()") for word in request.resume_text.split()}
+    job_words = {word.lower().strip(".,:;()") for word in request.job_description.split()}
+    keywords = sorted(word for word in job_words & resume_words if len(word) > 3)
+    score = round((len(keywords) / max(len(job_words), 1)) * 100)
+    return {"score": min(score, 100), "matched_keywords": keywords[:40], "status": "complete"}
 
 
 @app.get("/api/v1/careers")
