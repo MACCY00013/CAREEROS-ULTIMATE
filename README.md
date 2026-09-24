@@ -12,7 +12,7 @@ uvicorn backend.app.main:app --reload
 
 Open `http://localhost:8000`. Docker users can run `docker compose up --build` after creating `.env`.
 
-The Android client is under `android/`. With Android Studio and an SDK installed, build it with `cd android && ./gradlew assembleDebug`. Set `API_BASE_URL` in `android/app/build.gradle.kts` to the deployed API before signing a release APK. The app stores skills in Room and schedules WorkManager sync when network connectivity is available. GitHub Actions builds and uploads a debug APK on every push and pull request.
+The Android client is under `android/`. Build it against a public HTTPS API with `cd android && ./gradlew assembleDebug -PapiBaseUrl=https://your-api.example.com`. Set the GitHub Actions repository variable `API_BASE_URL` to the same public URL before downloading a CI APK; otherwise the build intentionally falls back to the placeholder and cannot sync. For a phone on the same Wi-Fi as a development machine, use that machine's LAN address, such as `-PapiBaseUrl=http://192.168.1.20:8000`, and use the debug variant only. Cellular data and production Wi-Fi require a publicly reachable HTTPS endpoint. The app stores skills in Room and schedules WorkManager sync when network connectivity is available. GitHub Actions builds and uploads a debug APK on every push and pull request.
 
 The current unsigned debug APK was built successfully at `artifacts/careeros-debug.apk` in the local workspace. It is not committed because release APKs should be signed through a protected build pipeline.
 

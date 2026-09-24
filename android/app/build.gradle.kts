@@ -9,13 +9,20 @@ android {
     namespace = "com.maccy.careeros"
     compileSdk = 35
 
+    val configuredApiUrl = providers.gradleProperty("apiBaseUrl")
+        .orElse(System.getenv("API_BASE_URL").orEmpty())
+        .get()
+        .takeIf { it.isNotBlank() }
+        ?: "https://api.example.com"
+    val normalizedApiUrl = configuredApiUrl.trimEnd('/')
+
     defaultConfig {
         applicationId = "com.maccy.careeros"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "API_BASE_URL", "\"https://api.example.com\"")
+        buildConfigField("String", "API_BASE_URL", "\"$normalizedApiUrl\"")
     }
 
     signingConfigs {

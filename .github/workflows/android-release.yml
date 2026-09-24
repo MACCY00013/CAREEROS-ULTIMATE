@@ -30,6 +30,7 @@ jobs:
       - name: Build signed release APK
         working-directory: android
         env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/careeros-release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
