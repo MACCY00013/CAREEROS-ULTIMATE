@@ -12,7 +12,7 @@ uvicorn backend.app.main:app --reload
 
 Open `http://localhost:8000`. Docker users can run `docker compose up --build` after creating `.env`.
 
-The Android client is under `android/`. With Android Studio and an SDK installed, build it with `gradle -p android assembleDebug`. Set `API_BASE_URL` in `android/app/build.gradle.kts` to the deployed API before signing a release APK. The app stores skills in Room and schedules WorkManager sync when network connectivity is available.
+The Android client is under `android/`. With Android Studio and an SDK installed, build it with `cd android && ./gradlew assembleDebug`. Set `API_BASE_URL` in `android/app/build.gradle.kts` to the deployed API before signing a release APK. The app stores skills in Room and schedules WorkManager sync when network connectivity is available. GitHub Actions builds and uploads a debug APK on every push and pull request.
 
 The current unsigned debug APK was built successfully at `artifacts/careeros-debug.apk` in the local workspace. It is not committed because release APKs should be signed through a protected build pipeline.
 
