@@ -16,6 +16,8 @@ The Android client is under `android/`. With Android Studio and an SDK installed
 
 The current unsigned debug APK was built successfully at `artifacts/careeros-debug.apk` in the local workspace. It is not committed because release APKs should be signed through a protected build pipeline.
 
+For a signed release, configure the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD`, then push a tag such as `v0.1.0`. The release workflow restores the keystore only on the GitHub runner and uploads the signed APK as an artifact.
+
 ## Configuration
 
 The Supabase project URL is represented in `.env.example`; the database password and all AI provider keys must be supplied locally or through the deployment secret manager. Never commit `.env`, database passwords, service-role keys, or provider keys. The publishable Supabase key is not a substitute for server-side authorization.
