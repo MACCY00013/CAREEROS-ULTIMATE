@@ -1,7 +1,11 @@
 services:
   app:
     build: .
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:change-me@db:5432/careeros
     ports:
       - "8000:8000"
     depends_on:

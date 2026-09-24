@@ -10,6 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from .db import Application, CareerProfileRow, Skill, initialize, session
+
 
 ROOT = Path(__file__).resolve().parents[2]
 WEB = ROOT / "frontend"
@@ -85,6 +87,7 @@ class ATSRequest(BaseModel):
 
 
 app = FastAPI(title="CareerOS API", version="0.1.0")
+initialize(SKILLS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("WEB_ORIGIN", "http://localhost:8000")],
@@ -116,13 +119,18 @@ def dashboard():
 
 @app.get("/api/v1/skills")
 def list_skills():
-    return {"items": [{"name": name, "level": "learning"} for name in SKILLS]}
+    with session() as database:
+        return {"items": [{"name": skill.name, "level": skill.level} for skill in database.query(Skill).order_by(Skill.name)]}
 
 
 @app.post("/api/v1/skills/sync")
 def sync_skill(skill: SkillUpdate):
-    if skill.name not in SKILLS:
-        SKILLS.append(skill.name)
+    with session.begin() as database:
+        saved = database.get(Skill, skill.name)
+        if saved:
+            saved.level = skill.level
+        else:
+            database.add(Skill(name=skill.name, level=skill.level))
     return {"saved": True, "item": skill.model_dump(), "sync_status": "SYNCED"}
 
 
@@ -133,16 +141,20 @@ def roadmap():
 
 @app.get("/api/v1/applications")
 def applications():
-    return {"items": TRACKER}
+    with session() as database:
+        return {"items": [{"id": item.id, "company": item.company, "role": item.role, "status": item.status} for item in database.query(Application).order_by(Application.company)]}
 
 
 @app.post("/api/v1/applications/sync")
 def sync_application(item: TrackerItem):
-    existing = next((application for application in TRACKER if application["id"] == item.id), None)
-    if existing:
-        existing.update(item.model_dump())
-    else:
-        TRACKER.append(item.model_dump())
+    with session.begin() as database:
+        existing = database.get(Application, item.id)
+        if existing:
+            existing.company = item.company
+            existing.role = item.role
+            existing.status = item.status
+        else:
+            database.add(Application(**item.model_dump()))
     return {"saved": True, "item": item.model_dump(), "sync_status": "SYNCED"}
 
 
@@ -162,11 +174,18 @@ def list_careers():
 
 @app.get("/api/v1/user/career-profile")
 def get_career_profile():
-    return {"target_role": "", "location": "", "budget": ""}
+    with session() as database:
+        profile = database.get(CareerProfileRow, 1)
+        return {"target_role": profile.target_role, "location": profile.location, "budget": profile.budget}
 
 
 @app.put("/api/v1/user/career-profile")
 def update_career_profile(profile: CareerProfile):
+    with session.begin() as database:
+        saved = database.get(CareerProfileRow, 1)
+        saved.target_role = profile.target_role
+        saved.location = profile.location
+        saved.budget = profile.budget
     return {"saved": True, "profile": profile.model_dump()}
 
 
