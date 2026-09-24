@@ -14,7 +14,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from .db import Application, CareerProfileRow, Skill, initialize, session
+from .db import AIResponse, Application, CareerProfileRow, Skill, initialize, session
+from .ai_client import configured
 from .queue import enqueue
 
 
@@ -107,6 +108,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+@app.get("/api/v1/ai/hub/providers")
+def ai_providers():
+    return {"providers": [{"name": provider, "configured": configured(provider)} for provider in ("chatgpt", "gemini", "superhuman-go")]}
 
 
 @app.middleware("http")
@@ -221,15 +227,20 @@ def job_feed():
 
 @app.post("/api/v1/ai/hub/process")
 def process_prompt(request: PromptRequest):
-    configured = {
-        "chatgpt": bool(os.getenv("OPENAI_API_KEY")),
-        "gemini": bool(os.getenv("GEMINI_API_KEY")),
-        "superhuman-go": bool(os.getenv("SUPERHUMAN_GO_API_KEY")),
-    }
-    if not configured[request.provider]:
+    if not configured(request.provider):
         raise HTTPException(status_code=503, detail=f"{request.provider} is not configured on the server")
-    queue_backend = enqueue("careeros:ai", {"provider": request.provider, "prompt": request.prompt})
-    return {"status": "queued", "provider": request.provider, "queue": queue_backend, "message": "Prompt accepted for secure background processing."}
+    request_id = str(uuid4())
+    queue_backend = enqueue("careeros:ai", {"id": request_id, "provider": request.provider, "prompt": request.prompt})
+    return {"id": request_id, "status": "queued", "provider": request.provider, "queue": queue_backend, "message": "Prompt accepted for secure background processing."}
+
+
+@app.get("/api/v1/ai/hub/{request_id}")
+def prompt_result(request_id: str):
+    with session() as database:
+        result = database.get(AIResponse, request_id)
+        if result is None:
+            return {"id": request_id, "status": "QUEUED"}
+        return {"id": result.id, "provider": result.provider, "status": result.status, "response": result.response}
 
 
 if WEB.exists():

@@ -38,6 +38,15 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String(20), default="wishlist")
 
 
+class AIResponse(Base):
+    __tablename__ = "ai_responses"
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(40))
+    prompt: Mapped[str] = mapped_column(String(4000))
+    response: Mapped[str] = mapped_column(String(20000), default="")
+    status: Mapped[str] = mapped_column(String(20), default="QUEUED")
+
+
 def initialize(seed_skills: list[str]) -> None:
     Base.metadata.create_all(engine)
     with SessionLocal.begin() as database:

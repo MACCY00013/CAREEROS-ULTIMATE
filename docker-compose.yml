@@ -13,6 +13,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+  ai-worker:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:change-me@db:5432/careeros
+      REDIS_URL: redis://redis:6379/0
+    command: ["python", "-m", "backend.app.ai_worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
   db:
     image: postgres:16-alpine
     environment:
