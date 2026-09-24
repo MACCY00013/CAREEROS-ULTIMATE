@@ -145,7 +145,14 @@ def health():
 
 @app.get("/api/v1/dashboard")
 def dashboard():
-    return {**DASHBOARD, "skills_count": len(SKILLS), "jobs_count": len(JOBS)}
+    with session() as database:
+        return {
+            **DASHBOARD,
+            "skills_count": database.query(Skill).count(),
+            "saved_jobs": 0,
+            "applications": database.query(Application).count(),
+            "jobs_count": len(JOBS),
+        }
 
 
 @app.get("/api/v1/skills")
