@@ -12,6 +12,8 @@ uvicorn backend.app.main:app --reload
 
 Open `http://localhost:8000`. Docker users can run `docker compose up --build` after creating `.env`.
 
+The Android client is under `android/`. With Android Studio and an SDK installed, build it with `gradle -p android assembleDebug`. Set `API_BASE_URL` in `android/app/build.gradle.kts` to the deployed API before signing a release APK. The app stores skills in Room and schedules WorkManager sync when network connectivity is available.
+
 ## Configuration
 
 The Supabase project URL is represented in `.env.example`; the database password and all AI provider keys must be supplied locally or through the deployment secret manager. Never commit `.env`, database passwords, service-role keys, or provider keys. The publishable Supabase key is not a substitute for server-side authorization.
@@ -26,5 +28,6 @@ The current API exposes `/api/v1/health`, `/api/v1/dashboard`, `/api/v1/skills`,
 - Add reviewed privacy/terms text, consent management, account deletion, audit logs, backups, Sentry, and a domain managed through your DNS provider.
 - Provide real 192x192 and 512x512 PNG/WebP icons plus iOS splash assets before store or PWA release.
 - Add provider adapters only after credentials, API permissions, attribution, and usage terms are confirmed.
+- Deploy with `render.yaml` or place `Caddyfile` behind a host with a DNS record for `DOMAIN`; a custom domain cannot be registered without access to the domain registrar and deployment account.
 
 The repository does not contain an APK or a custom domain yet. Those require a signed Android build pipeline and access to a domain/DNS and deployment account; they cannot be safely created from source alone.
