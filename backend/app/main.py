@@ -156,12 +156,13 @@ def list_skills():
 
 @app.post("/api/v1/skills/sync")
 def sync_skill(skill: SkillUpdate):
-    with session.begin() as database:
-        saved = database.get(Skill, skill.name)
-        if saved:
-            saved.level = skill.level
-        else:
-            database.add(Skill(name=skill.name, level=skill.level))
+    with session() as database:
+        with database.begin():
+            saved = database.get(Skill, skill.name)
+            if saved:
+                saved.level = skill.level
+            else:
+                database.add(Skill(name=skill.name, level=skill.level))
     return {"saved": True, "item": skill.model_dump(), "sync_status": "SYNCED"}
 
 
@@ -178,14 +179,15 @@ def applications():
 
 @app.post("/api/v1/applications/sync")
 def sync_application(item: TrackerItem):
-    with session.begin() as database:
-        existing = database.get(Application, item.id)
-        if existing:
-            existing.company = item.company
-            existing.role = item.role
-            existing.status = item.status
-        else:
-            database.add(Application(**item.model_dump()))
+    with session() as database:
+        with database.begin():
+            existing = database.get(Application, item.id)
+            if existing:
+                existing.company = item.company
+                existing.role = item.role
+                existing.status = item.status
+            else:
+                database.add(Application(**item.model_dump()))
     return {"saved": True, "item": item.model_dump(), "sync_status": "SYNCED"}
 
 
@@ -212,11 +214,12 @@ def get_career_profile():
 
 @app.put("/api/v1/user/career-profile")
 def update_career_profile(profile: CareerProfile):
-    with session.begin() as database:
-        saved = database.get(CareerProfileRow, 1)
-        saved.target_role = profile.target_role
-        saved.location = profile.location
-        saved.budget = profile.budget
+    with session() as database:
+        with database.begin():
+            saved = database.get(CareerProfileRow, 1)
+            saved.target_role = profile.target_role
+            saved.location = profile.location
+            saved.budget = profile.budget
     return {"saved": True, "profile": profile.model_dump()}
 
 

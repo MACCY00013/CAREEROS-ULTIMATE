@@ -24,8 +24,9 @@ def run() -> None:
         except Exception as error:
             answer = str(error)
             status = "FAILED"
-        with session.begin() as database:
-            database.add(AIResponse(id=job["id"], provider=job["provider"], prompt=job["prompt"], response=answer, status=status))
+        with session() as database:
+            with database.begin():
+                database.add(AIResponse(id=job["id"], provider=job["provider"], prompt=job["prompt"], response=answer, status=status))
         time.sleep(0.01)
 
 
