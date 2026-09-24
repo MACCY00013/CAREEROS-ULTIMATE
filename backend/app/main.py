@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
@@ -86,8 +87,13 @@ class ATSRequest(BaseModel):
     job_description: str = Field(min_length=20, max_length=20000)
 
 
-app = FastAPI(title="CareerOS API", version="0.1.0")
-initialize(SKILLS)
+@asynccontextmanager
+async def lifespan(_app):
+    initialize(SKILLS)
+    yield
+
+
+app = FastAPI(title="CareerOS API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[os.getenv("WEB_ORIGIN", "http://localhost:8000")],
