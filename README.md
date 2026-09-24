@@ -12,6 +12,10 @@ uvicorn backend.app.main:app --reload
 
 Open `http://localhost:8000`. Docker users can run `docker compose up --build` after creating `.env`.
 
+## Deploy with Vercel
+
+Import this repository at https://vercel.com/new. Vercel uses `vercel.json` to serve the PWA from `frontend/` and expose FastAPI through `api/index.py`. Configure these Vercel environment variables: `DATABASE_URL` (Supabase PostgreSQL connection string), `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `WEB_ORIGIN` (your Vercel URL), `OPENAI_API_KEY`, `GEMINI_API_KEY`, `SUPERHUMAN_GO_API_KEY`, `SUPERHUMAN_GO_API_URL`, and `REDIS_URL` from an external Redis provider such as Upstash. Docker Compose and the Render blueprint are alternatives; Vercel does not run PostgreSQL or Redis containers.
+
 The Android client is under `android/`. Build it against a public HTTPS API with `cd android && ./gradlew assembleDebug -PapiBaseUrl=https://your-api.example.com`. Set the GitHub Actions repository variable `API_BASE_URL` to the same public URL before downloading a CI APK; otherwise the build intentionally falls back to the placeholder and cannot sync. For a phone on the same Wi-Fi as a development machine, use that machine's LAN address, such as `-PapiBaseUrl=http://192.168.1.20:8000`, and use the debug variant only. Cellular data and production Wi-Fi require a publicly reachable HTTPS endpoint. The app stores skills in Room and schedules WorkManager sync when network connectivity is available. GitHub Actions builds and uploads a debug APK on every push and pull request.
 
 The current unsigned debug APK was built successfully at `artifacts/careeros-debug.apk` in the local workspace. It is not committed because release APKs should be signed through a protected build pipeline.
